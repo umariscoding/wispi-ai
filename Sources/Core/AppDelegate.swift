@@ -23,12 +23,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         panel = StealthPanel(
             contentRect: NSRect(x: s.maxX - WINDOW_WIDTH - 12, y: s.maxY - WINDOW_HEIGHT - 12,
                                 width: WINDOW_WIDTH, height: WINDOW_HEIGHT),
-            styleMask: [.titled, .closable, .nonactivatingPanel, .utilityWindow, .fullSizeContentView],
+            styleMask: [.nonactivatingPanel, .utilityWindow],
             backing: .buffered, defer: false
         )
-        panel.titlebarAppearsTransparent = true
-        panel.titleVisibility = .hidden
-        panel.backgroundColor = Theme.windowBg
+        panel.backgroundColor = .clear
+        panel.isOpaque = false
         panel.hasShadow = true
         panel.isFloatingPanel = true
         panel.becomesKeyOnlyIfNeeded = true
@@ -54,6 +53,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         hk.add(key: kVK_ANSI_T, mod: opt, id: 7) { [weak self] in self?.toggleTransparency() }
         hk.add(key: kVK_ANSI_R, mod: opt, id: 8) { [weak self] in self?.toggleRecording() }
         hk.add(key: kVK_ANSI_A, mod: opt, id: 9) { [weak self] in self?.queueScreenshot() }
+        hk.add(key: kVK_ANSI_X, mod: opt, id: 15) { [weak self] in self?.chat.abortRequest() }
         hk.add(key: kVK_ANSI_1, mod: opt, id: 10) { [weak self] in self?.move(.topLeft) }
         hk.add(key: kVK_ANSI_2, mod: opt, id: 11) { [weak self] in self?.move(.topCenter) }
         hk.add(key: kVK_ANSI_3, mod: opt, id: 12) { [weak self] in self?.move(.topRight) }

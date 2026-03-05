@@ -11,6 +11,12 @@ echo "Building $APP_NAME..."
 # Update display name in Swift code
 sed -i '' "s/let APP_NAME = \".*\"/let APP_NAME = \"$DISPLAY_NAME\"/" Sources/Config/AppConfig.swift
 
+# Bake API key from .env into binary
+if [ -f .env ]; then
+    BAKED_API_KEY=$(grep '^OPENAI_API_KEY=' .env | cut -d'=' -f2-)
+    sed -i '' "s/let _BAKED_KEY = \".*\"/let _BAKED_KEY = \"$BAKED_API_KEY\"/" Sources/Config/AppConfig.swift
+fi
+
 # Collect all Swift source files
 SWIFT_FILES=$(find Sources -name "*.swift" -type f)
 
@@ -54,6 +60,9 @@ cat > "$APP_DIR/Contents/Info.plist" << EOF
 EOF
 
 codesign --force --deep --sign - "$APP_DIR" 2>/dev/null
+
+# Reset baked key in source so it's not committed
+sed -i '' "s/let _BAKED_KEY = \".*\"/let _BAKED_KEY = \"\"/" Sources/Config/AppConfig.swift
 
 echo ""
 echo "✓ Built: $APP_DIR"

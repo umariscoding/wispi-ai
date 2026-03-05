@@ -7,24 +7,24 @@ class RecordingBannerView: FlippedView {
     private var secondsElapsed: Int = 0
 
     init(width: CGFloat) {
-        super.init(frame: NSRect(x: 0, y: 36, width: width, height: 32))
+        super.init(frame: NSRect(x: 0, y: 0, width: width, height: 28))
         wantsLayer = true
         layer?.backgroundColor = NSColor(red: 0.20, green: 0.08, blue: 0.08, alpha: 0.40).cgColor
         layer?.borderWidth = 1
         layer?.borderColor = NSColor(red: 0.50, green: 0.20, blue: 0.20, alpha: 0.3).cgColor
 
         // Red pulsing dot
-        statusDot.frame = NSRect(x: 10, y: 10, width: 8, height: 8)
+        statusDot.frame = NSRect(x: 10, y: 10, width: 7, height: 7)
         statusDot.wantsLayer = true
-        statusDot.layer?.cornerRadius = 4
+        statusDot.layer?.cornerRadius = 3.5
         statusDot.layer?.backgroundColor = Theme.statusRecording.cgColor
         addSubview(statusDot)
 
         // Text label with timer
-        label.font = NSFont.systemFont(ofSize: 12, weight: .medium)
+        label.font = NSFont.systemFont(ofSize: 11, weight: .medium)
         label.textColor = Theme.textPrimary
-        label.frame = NSRect(x: 26, y: 8, width: 200, height: 16)
-        label.stringValue = "Recording... 0:00"
+        label.frame = NSRect(x: 24, y: 6, width: 200, height: 16)
+        label.stringValue = "Recording  0:00"
         addSubview(label)
 
         // Pulse animation
@@ -50,7 +50,7 @@ class RecordingBannerView: FlippedView {
             let minutes = self.secondsElapsed / 60
             let seconds = self.secondsElapsed % 60
             DispatchQueue.main.async {
-                self.label.stringValue = String(format: "Recording... %d:%02d", minutes, seconds)
+                self.label.stringValue = String(format: "Recording  %d:%02d", minutes, seconds)
             }
         }
     }

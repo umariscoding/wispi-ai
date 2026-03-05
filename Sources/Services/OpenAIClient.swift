@@ -138,13 +138,15 @@ class OpenAIClient {
         }
     }
 
-    func send(_ message: String, completion: @escaping (String) -> Void) {
+    @discardableResult
+    func send(_ message: String, completion: @escaping (String) -> Void) -> URLSessionDataTask? {
         history.append(["role": "user", "content": message])
         trimHistory()
-        sendRequest(model: "gpt-4o", messages: history, completion: completion)
+        return sendRequest(model: "gpt-4o", messages: history, completion: completion)
     }
 
-    func sendWithScreenshot(_ message: String, imageData: Data, completion: @escaping (String) -> Void) {
+    @discardableResult
+    func sendWithScreenshot(_ message: String, imageData: Data, completion: @escaping (String) -> Void) -> URLSessionDataTask? {
         let base64Image = imageData.base64EncodedString()
         let defaultPrompt = """
             Look at this screenshot. It will have one of these: a coding problem, error, question, MCQ, or something that needs solving. \
@@ -166,10 +168,11 @@ class OpenAIClient {
         var messagesForAPI = history.dropLast().map { $0 }
         messagesForAPI.append(["role": "user", "content": contentWithImage])
 
-        sendRequest(model: "gpt-4o", messages: Array(messagesForAPI), isVision: true, completion: completion)
+        return sendRequest(model: "gpt-4o", messages: Array(messagesForAPI), isVision: true, completion: completion)
     }
 
-    func sendWithMultipleScreenshots(_ message: String, imageDataArray: [Data], completion: @escaping (String) -> Void) {
+    @discardableResult
+    func sendWithMultipleScreenshots(_ message: String, imageDataArray: [Data], completion: @escaping (String) -> Void) -> URLSessionDataTask? {
         let defaultPrompt = """
             Look at these screenshots. They will have one of these: a coding problem, error, question, MCQ, or something that needs solving. \
             FIRST: Write the complete problem statement that you understood from the screenshots (so I can verify you read it correctly). \
@@ -197,10 +200,17 @@ class OpenAIClient {
         var messagesForAPI = history.dropLast().map { $0 }
         messagesForAPI.append(["role": "user", "content": contentWithImages])
 
-        sendRequest(model: "gpt-4o", messages: Array(messagesForAPI), isVision: true, timeout: 90, completion: completion)
+        return sendRequest(model: "gpt-4o", messages: Array(messagesForAPI), isVision: true, timeout: 90, completion: completion)
     }
 
-    private func sendRequest(model: String, messages: [[String: Any]], isVision: Bool = false, timeout: TimeInterval = 60, completion: @escaping (String) -> Void) {
+    @discardableResult
+    private func sendRequest(model: String, messages: [[String: Any]], isVision: Bool = false, timeout: TimeInterval = 60, completion: @escaping (String) -> Void) -> URLSessionDataTask {
+        if OPENAI_API_KEY.isEmpty {
+            let dummyTask = URLSession.shared.dataTask(with: URLRequest(url: URL(string: "https://api.openai.com")!))
+            completion("Error: API key not set. Check your .env file.")
+            return dummyTask
+        }
+
         var request = URLRequest(url: URL(string: "https://api.openai.com/v1/chat/completions")!)
         request.httpMethod = "POST"
         request.setValue("Bearer \(OPENAI_API_KEY)", forHTTPHeaderField: "Authorization")
@@ -217,9 +227,10 @@ class OpenAIClient {
             "max_tokens": 1000
         ])
 
-        URLSession.shared.dataTask(with: request) { [weak self] data, response, error in
+        let task = URLSession.shared.dataTask(with: request) { [weak self] data, response, error in
             DispatchQueue.main.async {
                 if let error = error {
+                    if (error as NSError).code == NSURLErrorCancelled { return }
                     completion("Network error: \(error.localizedDescription)")
                     return
                 }
@@ -237,7 +248,8 @@ class OpenAIClient {
 
                 if let apiError = json["error"] as? [String: Any],
                    let errorMessage = apiError["message"] as? String {
-                    completion("API error: \(errorMessage)")
+                    let errorType = apiError["type"] as? String ?? "unknown"
+                    completion("API error [\(errorType)]: \(errorMessage)")
                     return
                 }
 
@@ -251,7 +263,9 @@ class OpenAIClient {
                 self?.history.append(["role": "assistant", "content": responseContent])
                 completion(responseContent)
             }
-        }.resume()
+        }
+        task.resume()
+        return task
     }
 
     func clear() { history = [] }

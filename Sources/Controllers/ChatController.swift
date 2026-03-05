@@ -25,10 +25,14 @@ class ChatController: NSViewController, NSTextFieldDelegate {
     var currentHeight: CGFloat = WINDOW_HEIGHT
     var currentWidth: CGFloat = WINDOW_WIDTH
 
+    private var currentTask: URLSessionDataTask?
+
     override func loadView() {
         view = NSView(frame: NSRect(x: 0, y: 0, width: WINDOW_WIDTH, height: WINDOW_HEIGHT))
         view.wantsLayer = true
         view.layer?.backgroundColor = Theme.windowBg.cgColor
+        view.layer?.cornerRadius = 12
+        view.layer?.masksToBounds = true
         setupUI()
     }
 
@@ -42,34 +46,41 @@ class ChatController: NSViewController, NSTextFieldDelegate {
         currentWidth = width
         view.frame.size = NSSize(width: width, height: height)
 
-        if let header = view.subviews.first(where: { $0.frame.origin.y > height - 50 }) {
-            header.frame = NSRect(x: 0, y: height - 36, width: width, height: 36)
+        // Update header
+        if let header = view.subviews.first(where: { $0.frame.origin.y > height - 40 }) {
+            header.frame = NSRect(x: 0, y: height - headerHeight, width: width, height: headerHeight)
             header.subviews.forEach { v in
                 if let tf = v as? NSTextField, tf.alignment == .right {
-                    tf.frame = NSRect(x: width - 190, y: 10, width: 180, height: 14)
+                    tf.frame = NSRect(x: width - 190, y: 7, width: 180, height: 14)
                 }
             }
         }
 
-        if let inputArea = view.subviews.first(where: { $0.frame.origin.y == 0 && $0.frame.height == 54 }) {
-            inputArea.frame = NSRect(x: 0, y: 0, width: width, height: 54)
+        // Update input area
+        if let inputArea = view.subviews.first(where: { $0.frame.origin.y == 0 && $0.frame.height == inputAreaHeight }) {
+            inputArea.frame = NSRect(x: 0, y: 0, width: width, height: inputAreaHeight)
             inputArea.subviews.forEach { v in
-                if v.layer?.cornerRadius == 16 {
-                    v.frame = NSRect(x: 8, y: 10, width: width - 50, height: 34)
-                    v.subviews.forEach { tf in
+                if let vfx = v as? NSVisualEffectView {
+                    vfx.frame = NSRect(x: 8, y: 8, width: width - 50, height: 32)
+                    vfx.subviews.forEach { tf in
                         if let textField = tf as? NSTextField {
-                            textField.frame = NSRect(x: 12, y: 7, width: width - 70, height: 20)
+                            textField.frame = NSRect(x: 12, y: 6, width: width - 70, height: 20)
                         }
                     }
                 }
                 if let btn = v as? NSButton {
-                    btn.frame = NSRect(x: width - 38, y: 12, width: 30, height: 30)
+                    btn.frame = NSRect(x: width - 38, y: 10, width: 28, height: 28)
                 }
             }
         }
 
-        let bannerHeight: CGFloat = recordingBanner != nil ? 32 : 0
-        scrollView.frame = NSRect(x: 0, y: 54 + bannerHeight, width: width, height: height - 36 - 54 - bannerHeight)
+        // Update recording banner position (just below header)
+        if let banner = recordingBanner {
+            banner.frame = NSRect(x: 0, y: height - headerHeight - 28, width: width, height: 28)
+        }
+
+        let bannerHeight: CGFloat = recordingBanner != nil ? 28 : 0
+        scrollView.frame = NSRect(x: 0, y: inputAreaHeight, width: width, height: height - headerHeight - inputAreaHeight - bannerHeight)
 
         if widthChanged {
             rebuildMessages()
@@ -93,13 +104,17 @@ class ChatController: NSViewController, NSTextFieldDelegate {
         layoutMessages()
     }
 
+    private let headerHeight: CGFloat = 28
+    private let inputAreaHeight: CGFloat = 48
+
     private func setupUI() {
-        let header = NSView(frame: NSRect(x: 0, y: WINDOW_HEIGHT - 36, width: WINDOW_WIDTH, height: 36))
+        // Header bar - compact, no window buttons
+        let header = NSView(frame: NSRect(x: 0, y: WINDOW_HEIGHT - headerHeight, width: WINDOW_WIDTH, height: headerHeight))
         header.wantsLayer = true
         header.layer?.backgroundColor = Theme.headerBg.cgColor
         view.addSubview(header)
 
-        statusDot.frame = NSRect(x: 10, y: 14, width: 7, height: 7)
+        statusDot.frame = NSRect(x: 10, y: 10, width: 7, height: 7)
         statusDot.wantsLayer = true
         statusDot.layer?.cornerRadius = 3.5
         statusDot.layer?.backgroundColor = Theme.statusStealth.cgColor
@@ -108,21 +123,22 @@ class ChatController: NSViewController, NSTextFieldDelegate {
         let title = NSTextField(labelWithString: APP_NAME)
         title.font = NSFont.systemFont(ofSize: 10, weight: .medium)
         title.textColor = Theme.textSecondary
-        title.frame = NSRect(x: 22, y: 10, width: 90, height: 14)
+        title.frame = NSRect(x: 22, y: 7, width: 90, height: 14)
         header.addSubview(title)
 
         hintLabel.font = NSFont.monospacedSystemFont(ofSize: 8, weight: .regular)
         hintLabel.textColor = Theme.textMuted
         hintLabel.alignment = .right
-        hintLabel.frame = NSRect(x: WINDOW_WIDTH - 190, y: 10, width: 180, height: 14)
+        hintLabel.frame = NSRect(x: WINDOW_WIDTH - 190, y: 7, width: 180, height: 14)
         header.addSubview(hintLabel)
 
-        let inputArea = NSView(frame: NSRect(x: 0, y: 0, width: WINDOW_WIDTH, height: 54))
+        // Input area at bottom
+        let inputArea = NSView(frame: NSRect(x: 0, y: 0, width: WINDOW_WIDTH, height: inputAreaHeight))
         inputArea.wantsLayer = true
         inputArea.layer?.backgroundColor = Theme.inputBg.cgColor
         view.addSubview(inputArea)
 
-        let fieldBg = NSVisualEffectView(frame: NSRect(x: 8, y: 10, width: WINDOW_WIDTH - 50, height: 34))
+        let fieldBg = NSVisualEffectView(frame: NSRect(x: 8, y: 8, width: WINDOW_WIDTH - 50, height: 32))
         fieldBg.material = .hudWindow
         fieldBg.blendingMode = .withinWindow
         fieldBg.wantsLayer = true
@@ -132,7 +148,7 @@ class ChatController: NSViewController, NSTextFieldDelegate {
         fieldBg.layer?.borderColor = NSColor(white: 0.35, alpha: 0.25).cgColor
         inputArea.addSubview(fieldBg)
 
-        inputField.frame = NSRect(x: 12, y: 7, width: WINDOW_WIDTH - 70, height: 20)
+        inputField.frame = NSRect(x: 12, y: 6, width: WINDOW_WIDTH - 70, height: 20)
         inputField.isBordered = false
         inputField.focusRingType = .none
         inputField.backgroundColor = .clear
@@ -145,11 +161,12 @@ class ChatController: NSViewController, NSTextFieldDelegate {
         fieldBg.addSubview(inputField)
 
         // Send button
-        sendButton.frame = NSRect(x: WINDOW_WIDTH - 38, y: 12, width: 30, height: 30)
+        sendButton.frame = NSRect(x: WINDOW_WIDTH - 38, y: 10, width: 28, height: 28)
         sendButton.bezelStyle = .texturedRounded
         sendButton.isBordered = false
         sendButton.wantsLayer = true
-        sendButton.layer?.backgroundColor = NSColor.clear.cgColor
+        sendButton.layer?.cornerRadius = 14
+        sendButton.layer?.backgroundColor = NSColor(white: 0.25, alpha: 0.4).cgColor
         if let image = NSImage(systemSymbolName: "paperplane.fill", accessibilityDescription: "Send") {
             sendButton.image = image
             sendButton.contentTintColor = Theme.textPrimary
@@ -158,7 +175,8 @@ class ChatController: NSViewController, NSTextFieldDelegate {
         sendButton.action = #selector(sendButtonPressed)
         inputArea.addSubview(sendButton)
 
-        scrollView.frame = NSRect(x: 0, y: 54, width: WINDOW_WIDTH, height: WINDOW_HEIGHT - 36 - 54)
+        // Scroll view fills space between header and input
+        scrollView.frame = NSRect(x: 0, y: inputAreaHeight, width: WINDOW_WIDTH, height: WINDOW_HEIGHT - headerHeight - inputAreaHeight)
         scrollView.hasVerticalScroller = true
         scrollView.autohidesScrollers = true
         scrollView.drawsBackground = true
@@ -171,7 +189,7 @@ class ChatController: NSViewController, NSTextFieldDelegate {
         view.addSubview(scrollView)
 
         updateMode(active: false)
-        addMessage("Ready.\n\n⌥Space type • ⌥S screen • ⌥R record\n⌥A queue • ⌥Enter send • ⌥W wide • ⌥F tall\n⌥T transparent • ⌥H hide • ⌥C clear • ⌥1-5 position", isUser: false)
+        addMessage("Ready.\n\nopt+Space type  /  opt+S screen  /  opt+R record\nopt+A queue  /  opt+Enter send  /  opt+X abort\nopt+W wide  /  opt+F tall  /  opt+T transparent\nopt+H hide  /  opt+C clear  /  opt+1-5 position", isUser: false)
     }
 
     @objc private func sendButtonPressed() {
@@ -181,11 +199,11 @@ class ChatController: NSViewController, NSTextFieldDelegate {
     func updateMode(active: Bool) {
         if isRecordingAudio {
             statusDot.layer?.backgroundColor = Theme.statusRecording.cgColor
-            hintLabel.stringValue = "🔴 Recording... ⌥R stop"
+            hintLabel.stringValue = "Recording  opt+R stop"
         } else if !queuedScreenshots.isEmpty {
             statusDot.layer?.backgroundColor = NSColor(red: 0.40, green: 0.60, blue: 0.95, alpha: 1).cgColor
             let count = queuedScreenshots.count
-            hintLabel.stringValue = "📸 \(count) screenshot\(count > 1 ? "s" : "") • ⌥Enter to send"
+            hintLabel.stringValue = "\(count) screenshot\(count > 1 ? "s" : "") queued  opt+Enter send"
 
             let pulse = CABasicAnimation(keyPath: "opacity")
             pulse.fromValue = 1.0
@@ -196,7 +214,7 @@ class ChatController: NSViewController, NSTextFieldDelegate {
             statusDot.layer?.add(pulse, forKey: "pulse")
         } else {
             statusDot.layer?.backgroundColor = active ? Theme.statusActive.cgColor : Theme.statusStealth.cgColor
-            hintLabel.stringValue = active ? "⌥Space hide" : "⌥Space show"
+            hintLabel.stringValue = active ? "opt+Space hide" : "opt+Space show"
         }
     }
 
@@ -258,7 +276,8 @@ class ChatController: NSViewController, NSTextFieldDelegate {
                 self.chatContainer.addSubview(apiLoading)
                 self.layoutMessages()
 
-                self.client.sendWithScreenshot(prompt, imageData: imageData) { [weak self] response in
+                self.currentTask = self.client.sendWithScreenshot(prompt, imageData: imageData) { [weak self] response in
+                    self?.currentTask = nil
                     self?.loadingView?.removeFromSuperview()
                     self?.loadingView = nil
                     self?.addMessage(response, isUser: false)
@@ -294,12 +313,12 @@ class ChatController: NSViewController, NSTextFieldDelegate {
             case .failure(let error):
                 switch error {
                 case .noPermission(let msg):
-                    self.addMessage("⚠️ Screen recording permission needed\n\n\(msg)", isUser: false)
+                    self.addMessage("Screen recording permission needed\n\n\(msg)", isUser: false)
                     ScreenCapture.requestPermission()
                 case .noDisplay:
-                    self.addMessage("⚠️ No display found", isUser: false)
+                    self.addMessage("No display found", isUser: false)
                 case .captureFailed(let msg):
-                    self.addMessage("⚠️ Capture failed: \(msg)", isUser: false)
+                    self.addMessage("Capture failed: \(msg)", isUser: false)
                 }
             }
         }
@@ -307,7 +326,7 @@ class ChatController: NSViewController, NSTextFieldDelegate {
 
     func sendQueuedScreenshots() {
         guard !queuedScreenshots.isEmpty else {
-            addMessage("No screenshots queued. Use ⌥A to add screenshots first.", isUser: false)
+            addMessage("No screenshots queued. Use opt+A to add screenshots first.", isUser: false)
             return
         }
 
@@ -329,8 +348,9 @@ class ChatController: NSViewController, NSTextFieldDelegate {
         chatContainer.addSubview(loading)
         layoutMessages()
 
-        client.sendWithMultipleScreenshots(prompt, imageDataArray: screenshots) { [weak self] response in
+        currentTask = client.sendWithMultipleScreenshots(prompt, imageDataArray: screenshots) { [weak self] response in
             guard let self = self else { return }
+            self.currentTask = nil
             self.loadingView?.removeFromSuperview()
             self.loadingView = nil
             self.addMessage(response, isUser: false)
@@ -353,9 +373,10 @@ class ChatController: NSViewController, NSTextFieldDelegate {
         onRecordingStateChange?(true)
         updateMode(active: true)
 
-        // Add recording banner
+        // Add recording banner below header
         recordingBanner = RecordingBannerView(width: currentWidth)
         if let banner = recordingBanner {
+            banner.frame.origin.y = currentHeight - headerHeight - 28
             view.addSubview(banner)
             updateLayout(width: currentWidth, height: currentHeight)
         }
@@ -421,7 +442,8 @@ class ChatController: NSViewController, NSTextFieldDelegate {
 
                     self.addMessage("**Heard:** \(transcription)", isUser: true)
 
-                    self.client.send("The user said (from audio): \"\(transcription)\"\n\nRespond to what they said or asked.") { [weak self] response in
+                    self.currentTask = self.client.send("The user said (from audio): \"\(transcription)\"\n\nRespond to what they said or asked.") { [weak self] response in
+                        self?.currentTask = nil
                         self?.loadingView?.removeFromSuperview()
                         self?.loadingView = nil
                         self?.recordingBanner?.removeFromSuperview()
@@ -504,6 +526,16 @@ class ChatController: NSViewController, NSTextFieldDelegate {
         super.keyDown(with: event)
     }
 
+    func abortRequest() {
+        guard isLoading else { return }
+        currentTask?.cancel()
+        currentTask = nil
+        loadingView?.removeFromSuperview()
+        loadingView = nil
+        isLoading = false
+        addMessage("Aborted.", isUser: false)
+    }
+
     private func send() {
         let text = getInputText()
         guard !text.isEmpty, !isLoading else { return }
@@ -517,8 +549,9 @@ class ChatController: NSViewController, NSTextFieldDelegate {
         chatContainer.addSubview(loading)
         layoutMessages()
 
-        client.send(text) { [weak self] response in
+        currentTask = client.send(text) { [weak self] response in
             guard let self = self else { return }
+            self.currentTask = nil
             self.loadingView?.removeFromSuperview()
             self.loadingView = nil
             self.addMessage(response, isUser: false)
