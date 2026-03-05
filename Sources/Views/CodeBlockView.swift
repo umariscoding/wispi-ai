@@ -6,11 +6,11 @@ class CodeBlockView: NSView {
     init(code: String, language: String, width: CGFloat) {
         super.init(frame: .zero)
         wantsLayer = true
-        layer?.cornerRadius = 8
+        layer?.cornerRadius = 12
         layer?.masksToBounds = true
         layer?.backgroundColor = Theme.codeBg.cgColor
         layer?.borderWidth = 1
-        layer?.borderColor = NSColor(white: 0.15, alpha: 1).cgColor
+        layer?.borderColor = NSColor(white: 0.20, alpha: 0.3).cgColor
 
         let blockWidth = width - 20
         let cleanCode = code.trimmingCharacters(in: .whitespacesAndNewlines)

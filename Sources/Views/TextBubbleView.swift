@@ -6,7 +6,9 @@ class TextBubbleView: NSView {
     init(text: String, isUser: Bool, width: CGFloat) {
         super.init(frame: .zero)
         wantsLayer = true
-        layer?.cornerRadius = 12
+        layer?.cornerRadius = 16
+        layer?.masksToBounds = true
+        layer?.borderWidth = 1
 
         let maxWidth = width - 50
 
@@ -14,8 +16,8 @@ class TextBubbleView: NSView {
 
         if isUser {
             textView.string = text
-            textView.font = NSFont.systemFont(ofSize: 12.5)
-            textView.textColor = Theme.textPrimary
+            textView.font = NSFont.systemFont(ofSize: 13, weight: .regular)
+            textView.textColor = .white
         } else {
             textView.textStorage?.setAttributedString(Self.parseMarkdown(text))
         }
@@ -23,22 +25,22 @@ class TextBubbleView: NSView {
         textView.backgroundColor = .clear
         textView.isEditable = false
         textView.isSelectable = true
-        textView.textContainerInset = NSSize(width: 10, height: 8)
+        textView.textContainerInset = NSSize(width: 12, height: 10)
         textView.textContainer?.lineFragmentPadding = 0
         textView.isVerticallyResizable = true
-        textView.frame = NSRect(x: 0, y: 0, width: maxWidth - 20, height: 10000)
+        textView.frame = NSRect(x: 0, y: 0, width: maxWidth - 24, height: 10000)
         textView.sizeToFit()
 
-        let bubbleWidth = min(maxWidth, textView.frame.width + 24)
-        let bubbleHeight = textView.frame.height + 4
+        let bubbleWidth = min(maxWidth, textView.frame.width + 28)
+        let bubbleHeight = textView.frame.height + 6
 
         if isUser {
             layer?.backgroundColor = Theme.userBubble.cgColor
+            layer?.borderColor = NSColor(white: 1, alpha: 0.15).cgColor
             frame = NSRect(x: width - bubbleWidth - 10, y: 0, width: bubbleWidth, height: bubbleHeight)
         } else {
             layer?.backgroundColor = Theme.aiBubble.cgColor
-            layer?.borderWidth = 1
-            layer?.borderColor = NSColor(white: 0.20, alpha: 1).cgColor
+            layer?.borderColor = NSColor(white: 0.25, alpha: 0.3).cgColor
             frame = NSRect(x: 10, y: 0, width: bubbleWidth, height: bubbleHeight)
         }
 
@@ -49,10 +51,10 @@ class TextBubbleView: NSView {
 
     static func parseMarkdown(_ text: String) -> NSAttributedString {
         let result = NSMutableAttributedString()
-        let baseFont = NSFont.systemFont(ofSize: 12.5)
-        let boldFont = NSFont.boldSystemFont(ofSize: 12.5)
+        let baseFont = NSFont.systemFont(ofSize: 13)
+        let boldFont = NSFont.boldSystemFont(ofSize: 13)
         let headerFont = NSFont.boldSystemFont(ofSize: 14)
-        let codeFont = NSFont.monospacedSystemFont(ofSize: 11.5, weight: .regular)
+        let codeFont = NSFont.monospacedSystemFont(ofSize: 12, weight: .regular)
 
         let lines = text.components(separatedBy: "\n")
 
