@@ -75,7 +75,7 @@ class TextBubbleView: NSView {
                 processedLine = String(processedLine.dropFirst(2))
                 lineAttrs[.font] = NSFont.boldSystemFont(ofSize: 15)
             } else if processedLine.hasPrefix("- ") || processedLine.hasPrefix("* ") {
-                processedLine = "• " + String(processedLine.dropFirst(2))
+                processedLine = "- " + String(processedLine.dropFirst(2))
             }
 
             let attrLine = parseInlineMarkdown(processedLine, baseAttrs: lineAttrs, boldFont: boldFont, codeFont: codeFont)

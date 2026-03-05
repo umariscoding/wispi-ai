@@ -8,7 +8,7 @@ class ScreenshotBubbleView: FlippedView {
         layer?.masksToBounds = true
         layer?.backgroundColor = isUser ? Theme.userBubble.cgColor : Theme.aiBubble.cgColor
         layer?.borderWidth = 1
-        layer?.borderColor = isUser ? NSColor(white: 1, alpha: 0.15).cgColor : NSColor(white: 0.25, alpha: 0.3).cgColor
+        layer?.borderColor = isUser ? NSColor(white: 0.40, alpha: 0.2).cgColor : NSColor(white: 0.25, alpha: 0.25).cgColor
 
         let maxContentWidth = (width / 2) - 40
         var currentY: CGFloat = 8

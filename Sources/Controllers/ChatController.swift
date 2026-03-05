@@ -151,11 +151,8 @@ class ChatController: NSViewController, NSTextFieldDelegate {
         sendButton.wantsLayer = true
         sendButton.layer?.backgroundColor = NSColor.clear.cgColor
         if let image = NSImage(systemSymbolName: "paperplane.fill", accessibilityDescription: "Send") {
-            let resized = NSImage(size: NSSize(width: 16, height: 16))
-            resized.lockFocus()
-            image.draw(in: NSRect(x: 0, y: 0, width: 16, height: 16))
-            resized.unlockFocus()
-            sendButton.image = resized
+            sendButton.image = image
+            sendButton.contentTintColor = Theme.textPrimary
         }
         sendButton.target = self
         sendButton.action = #selector(sendButtonPressed)

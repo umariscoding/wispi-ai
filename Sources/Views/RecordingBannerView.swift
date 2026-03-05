@@ -24,7 +24,7 @@ class RecordingBannerView: FlippedView {
         label.font = NSFont.systemFont(ofSize: 12, weight: .medium)
         label.textColor = Theme.textPrimary
         label.frame = NSRect(x: 26, y: 8, width: 200, height: 16)
-        label.stringValue = "🔴 Recording... 0:00"
+        label.stringValue = "Recording... 0:00"
         addSubview(label)
 
         // Pulse animation
@@ -39,7 +39,7 @@ class RecordingBannerView: FlippedView {
     func stopRecording() {
         recordingTimer?.invalidate()
         recordingTimer = nil
-        label.stringValue = "✓ Processing..."
+        label.stringValue = "Processing..."
         secondsElapsed = 0
     }
 
@@ -50,7 +50,7 @@ class RecordingBannerView: FlippedView {
             let minutes = self.secondsElapsed / 60
             let seconds = self.secondsElapsed % 60
             DispatchQueue.main.async {
-                self.label.stringValue = String(format: "🔴 Recording... %d:%02d", minutes, seconds)
+                self.label.stringValue = String(format: "Recording... %d:%02d", minutes, seconds)
             }
         }
     }

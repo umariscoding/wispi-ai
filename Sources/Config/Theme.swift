@@ -10,8 +10,8 @@ struct Theme {
     // Frosted glass input field
     static let inputFieldBg = NSColor(red: 0.15, green: 0.15, blue: 0.18, alpha: 0.35)
 
-    // Bubble colors with transparency
-    static let userBubble = NSColor(red: 0.25, green: 0.55, blue: 0.98, alpha: 0.85)
+    // Bubble colors - Neutral gray scheme (no blue)
+    static let userBubble = NSColor(red: 0.28, green: 0.28, blue: 0.30, alpha: 0.85)
     static let aiBubble = NSColor(red: 0.12, green: 0.12, blue: 0.15, alpha: 0.50)
 
     static let codeBg = NSColor(red: 0.04, green: 0.04, blue: 0.05, alpha: 0.80)
